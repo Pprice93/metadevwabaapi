@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vehicle Profile</title>
+<style>
+ body {font-family: Arial, sans-serif;margin:20px;}
+ #profileView.hidden, #loginView.hidden {display:none;}
+ #sliderContainer {position: relative;width: 100%;margin: 20px 0;}
+ #kmsRange {width:100%;}
+ #truck {position:absolute;top:-25px;font-size:24px;color:#0074D9;}
+ .inbox-message {border:1px solid #ccc;padding:10px;margin:10px 0;}
+</style>
+</head>
+<body>
+<div id="loginView">
+  <h2>Login</h2>
+  <input id="username" placeholder="Username">
+  <button onclick="login()">Login</button>
+</div>
+<div id="profileView" class="hidden">
+  <h2 id="welcome"></h2>
+  <button onclick="logout()">Logout</button>
+  <h3>Edit Profile</h3>
+  <label>Vehicle: <input id="vehicle"></label>
+  <button onclick="saveProfile()">Save</button>
+  <h3>Driving Habits</h3>
+  <div id="sliderContainer">
+    <input type="range" id="kmsRange" min="0" max="140000" step="10000" disabled>
+    <span id="truck">🚚</span>
+  </div>
+  <span id="kmsLabel">0 km</span>
+  <h3>Inbox</h3>
+  <div id="inbox"></div>
+  <button onclick="requestUpdate()">Simulate Update Request</button>
+</div>
+<script>
+let profile = null;
+
+function loadProfile() {
+  const data = localStorage.getItem('profile');
+  profile = data ? JSON.parse(data) : {username:'', vehicle:'', kms:0, updates:[]};
+}
+
+function saveProfile() {
+  profile.vehicle = document.getElementById('vehicle').value;
+  localStorage.setItem('profile', JSON.stringify(profile));
+  renderProfile();
+}
+
+function login() {
+  const user = document.getElementById('username').value.trim();
+  if (!user) return;
+  loadProfile();
+  profile.username = user;
+  localStorage.setItem('profile', JSON.stringify(profile));
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('profileView').classList.remove('hidden');
+  renderProfile();
+}
+
+function logout() {
+  document.getElementById('profileView').classList.add('hidden');
+  document.getElementById('loginView').classList.remove('hidden');
+}
+
+function requestUpdate() {
+  const inbox = document.getElementById('inbox');
+  const msg = document.createElement('div');
+  msg.className = 'inbox-message';
+  msg.innerHTML = '<p>How many kilometres are you at now?</p>' +
+    '<input type="number" id="reply" min="0" max="140000" step="1000">' +
+    '<button>Submit</button>';
+  msg.querySelector('button').onclick = function() {
+    const val = parseInt(msg.querySelector('input').value, 10);
+    if (!isNaN(val)) updateKms(val);
+    msg.querySelector('input').disabled = true;
+    msg.querySelector('button').disabled = true;
+  };
+  inbox.prepend(msg);
+}
+
+function updateKms(val) {
+  if (val < 0) val = 0;
+  if (val > 140000) val = 140000;
+  profile.kms = val;
+  profile.updates.push({date:new Date().toISOString(), kms:val});
+  localStorage.setItem('profile', JSON.stringify(profile));
+  renderProfile();
+}
+
+function renderProfile() {
+  document.getElementById('welcome').innerText = 'Welcome ' + profile.username;
+  document.getElementById('vehicle').value = profile.vehicle;
+  const range = document.getElementById('kmsRange');
+  range.value = profile.kms;
+  document.getElementById('kmsLabel').innerText = profile.kms + ' km';
+  renderTruck();
+  renderInbox();
+}
+
+function renderTruck() {
+  const range = document.getElementById('kmsRange');
+  const truck = document.getElementById('truck');
+  const percent = range.value / range.max;
+  const width = range.offsetWidth;
+  truck.style.left = (percent * width - 12) + 'px'; // center
+}
+
+function renderInbox() {
+  const inbox = document.getElementById('inbox');
+  inbox.innerHTML = '';
+  profile.updates.slice().reverse().forEach(u => {
+    const m = document.createElement('div');
+    m.className = 'inbox-message';
+    m.innerText = 'Update received: ' + u.kms + ' km on ' + new Date(u.date).toLocaleDateString();
+    inbox.appendChild(m);
+  });
+}
+
+window.addEventListener('load', () => {
+  loadProfile();
+  if (profile.username) {
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('profileView').classList.remove('hidden');
+    renderProfile();
+  }
+});
+</script>
+</body>
+</html>
