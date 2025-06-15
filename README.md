@@ -29,3 +29,15 @@ This repository also includes a simple Express server that can act as a webhook 
 3. Expose `http://localhost:3000` to the internet using a tunneling service such as ngrok so Meta can reach it over HTTPS. Use the public URL as the callback URL when configuring the webhook in the Meta Business dashboard.
 
 The server responds to the GET webhook verification request and logs incoming POST messages to the console.
+
+### Lender API Key Management
+
+Two helper endpoints allow you to generate and retrieve API keys for bank
+lenders that want to integrate with the OpenAI assistant "Jen - Finance".
+
+* `POST /generate-api-key` – pass a JSON body with `lenderId` to generate a
+  persistent API key.
+* `GET /lender-api-key/:lenderId` – retrieve the previously generated key for a
+  lender.
+
+Generated keys are stored in `lender-keys.json` in the project root.

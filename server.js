@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const { generateKey, getKey } = require('./lenderKeys');
 
 const app = express();
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'YOUR_VERIFY_TOKEN';
@@ -20,6 +21,24 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', (req, res) => {
   console.log('Received webhook:', JSON.stringify(req.body, null, 2));
   res.sendStatus(200);
+});
+
+app.post('/generate-api-key', (req, res) => {
+  const { lenderId } = req.body;
+  if (!lenderId) {
+    return res.status(400).json({ message: 'lenderId required' });
+  }
+  const key = generateKey(lenderId);
+  res.json({ lenderId, apiKey: key });
+});
+
+app.get('/lender-api-key/:lenderId', (req, res) => {
+  const { lenderId } = req.params;
+  const key = getKey(lenderId);
+  if (!key) {
+    return res.status(404).json({ message: 'Key not found' });
+  }
+  res.json({ lenderId, apiKey: key });
 });
 
 const PORT = process.env.PORT || 3000;
